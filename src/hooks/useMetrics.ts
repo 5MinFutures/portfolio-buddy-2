@@ -41,8 +41,9 @@ const useMetrics = (
       });
     } else if (sortConfig.key) {
       sorted.sort((a: any, b: any) => {
-        let valA = a[sortConfig.key] ?? 0;
-        let valB = b[sortConfig.key] ?? 0;
+        const key = sortConfig.key as string;
+        let valA = a[key] ?? 0;
+        let valB = b[key] ?? 0;
         if (typeof valA === 'string') valA = valA.toLowerCase();
         if (typeof valB === 'string') valB = valB.toLowerCase();
         if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;

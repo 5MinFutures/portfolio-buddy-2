@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { TrendingUp, Settings, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import MasterContractControl from './MasterContractControl';
 import SortableHeader from './SortableHeader.tsx';
@@ -42,7 +41,6 @@ const MetricsTable = ({
   showAdvancedSort,
   setShowAdvancedSort,
   addSortPriority,
-  removeSortPriority,
   updateSortPriority,
   clearSorting,
   applyAdvancedSort
@@ -163,7 +161,6 @@ const MetricsTable = ({
                     masterValue={masterContractValue} 
                     onMasterValueChange={setMasterContractValue} 
                     onApplyToAll={applyMasterToAll} 
-                    allMetricsKeys={Object.keys(sortedAndFilteredMetrics)} 
                   />
                 </div>
               </th>

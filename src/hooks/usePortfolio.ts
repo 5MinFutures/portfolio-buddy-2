@@ -1,6 +1,6 @@
 // src/hooks/usePortfolio.ts
 import { useMemo } from 'react';
-import { normalizeDate, getDateKey, getMarginRate, getDisplayName, getColorForIndex } from '../utils/dataUtils.ts';
+import { getDateKey, getMarginRate, getDisplayName, getColorForIndex } from '../utils/dataUtils.ts';
 import { differenceInCalendarDays } from 'date-fns';
 
 const usePortfolio = (
@@ -116,7 +116,7 @@ const usePortfolio = (
 
     const combinedData: any[] = [];
     // Merge all individual data by date, filling nulls for missing dates
-    const allDates = new Set(series.flatMap(s => s.data.map(d => d.date)));
+    const allDates = new Set(series.flatMap(s => s.data.map((d: any) => d.date)));
     Array.from(allDates).sort().forEach(date => {
       const entry: any = { date };
       series.forEach(s => {

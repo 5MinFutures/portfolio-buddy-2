@@ -215,7 +215,7 @@ const PortfolioSection = ({
       y: {
         ticks: {
           font: { size: 10 },
-          callback: (value: number) => normalizeEquity ? `${value.toFixed(2)}%` : formatNumber(value),
+          callback: (value: any) => normalizeEquity ? `${value.toFixed(2)}%` : formatNumber(value),
         },
         grid: { color: '#e5e7eb' },
       },
@@ -229,7 +229,7 @@ const PortfolioSection = ({
         mode: 'index' as const,
         intersect: false,
         callbacks: {
-          label: (context: { dataset: { label: string }; parsed: { y: number } }) => `${context.dataset.label}: ${normalizeEquity ? context.parsed.y.toFixed(2) + '%' : formatNumber(context.parsed.y)}`,
+          label: (context: any) => `${context.dataset.label || ''}: ${normalizeEquity ? context.parsed.y.toFixed(2) + '%' : formatNumber(context.parsed.y)}`,
         },
       },
       zoom: {
@@ -272,7 +272,7 @@ const PortfolioSection = ({
         reverse: true,
         ticks: {
           ...chartOptions.scales.y.ticks,
-          callback: (value: number) => normalizeEquity ? `${value.toFixed(2)}%` : formatNumber(value),
+          callback: (value: any) => normalizeEquity ? `${value.toFixed(2)}%` : formatNumber(value),
         },
       },
     },

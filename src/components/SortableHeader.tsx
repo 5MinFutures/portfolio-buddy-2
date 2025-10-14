@@ -1,8 +1,14 @@
 // src/components/SortableHeader.tsx
-import React from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 
-const SortableHeader = ({ column, children, sortConfig, handleSort }) => {
+interface SortableHeaderProps {
+  column: string;
+  children: React.ReactNode;
+  sortConfig: { key: string | null; direction: 'asc' | 'desc' };
+  handleSort: (key: string) => void;
+}
+
+const SortableHeader = ({ column, children, sortConfig, handleSort }: SortableHeaderProps) => {
   return (
     <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b cursor-pointer hover:bg-gray-100 relative group">
       <div className="flex items-center space-x-1" onClick={() => handleSort(column)}>
