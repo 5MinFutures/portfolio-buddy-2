@@ -276,8 +276,9 @@ const App = () => {
     <div className="container mx-auto p-2 sm:p-4 max-w-7xl">
       <Header />
       <UploadSection onFileChange={(e) => {
-        if (e.target.files) {
-          handleFileUpload(Array.from(e.target.files));
+        const target = e.target as HTMLInputElement;
+        if (target.files) {
+          handleFileUpload(Array.from(target.files));
         }
       }} onFetchSupabase={fetchFromSupabase} processing={processing} />
       {errors.length > 0 && <ErrorList errors={errors} />}

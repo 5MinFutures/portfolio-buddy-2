@@ -8,8 +8,7 @@ interface MasterContractControlProps {
   allMetricsKeys: string[];
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const MasterContractControl = ({ masterValue, onMasterValueChange, onApplyToAll, allMetricsKeys }: MasterContractControlProps) => {
+const MasterContractControl = ({ masterValue, onMasterValueChange, onApplyToAll }: Omit<MasterContractControlProps, 'allMetricsKeys'>) => {
   const [localValue, setLocalValue] = useState(masterValue);
   const [isFocused, setIsFocused] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
