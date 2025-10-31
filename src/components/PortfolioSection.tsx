@@ -63,6 +63,7 @@ interface IndividualChartsData {
 interface PortfolioSectionProps {
   allMetrics: Record<string, Record<string, unknown>>;
   selectedTradeLists: Set<string>;
+  setSelectedTradeLists: React.Dispatch<React.SetStateAction<Set<string>>>;
   toggleSelection: (filename: string) => void;
   dateRange: { start: string | null; end: string | null };
   setDateRange: React.Dispatch<React.SetStateAction<{ start: string | null; end: string | null }>>;
@@ -96,6 +97,7 @@ interface PortfolioSectionProps {
 const PortfolioSection = ({
   allMetrics,
   selectedTradeLists,
+  setSelectedTradeLists,
   toggleSelection,
   dateRange,
   setDateRange,
@@ -284,6 +286,7 @@ const PortfolioSection = ({
         <MetricsTable
           sortedAndFilteredMetrics={sortedAndFilteredMetrics}
           selectedTradeLists={selectedTradeLists}
+          setSelectedTradeLists={setSelectedTradeLists}
           toggleSelection={toggleSelection}
           contractMultipliers={contractMultipliers}
           handleContractChange={handleContractChange}

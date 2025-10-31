@@ -200,11 +200,57 @@ const App = () => {
         .from('csv_files')
         .select('filename, file_content');
 
-      if (error) throw error;
+      if (error) {
+        // Enhanced Supabase error handling with defensive checks
+        const errorDetails = [
+          error.message,
+          error.details ? `Details: ${error.details}` : null,
+          error.hint ? `Hint: ${error.hint}` : null
+        ].filter(Boolean).join('. ');
+        throw new Error(errorDetails || 'Supabase query failed');
+      }
 
-      const supabaseFiles = data.map(row => 
-        new File([row.file_content], row.filename, { type: 'text/csv' })
-      );
+      if (!data || !Array.isArray(data)) {
+        throw new Error('Invalid data format received from Supabase');
+      }
+
+      // Validate and create files with defensive error handling
+      const supabaseFiles: File[] = [];
+      const fileErrors: string[] = [];
+
+      for (const row of data) {
+        try {
+          if (!row.filename || typeof row.filename !== 'string') {
+            fileErrors.push(`Invalid filename in row: ${JSON.stringify(row)}`);
+            continue;
+          }
+
+          if (!row.file_content) {
+            fileErrors.push(`Missing file_content for ${row.filename}`);
+            continue;
+          }
+
+          // Handle file_content whether it's a string or blob
+          const fileContent = typeof row.file_content === 'string'
+            ? row.file_content
+            : row.file_content;
+
+          const file = new File([fileContent], row.filename, { type: 'text/csv' });
+          supabaseFiles.push(file);
+        } catch (fileError: unknown) {
+          const fileErrorMsg = fileError instanceof Error ? fileError.message : 'Unknown error';
+          fileErrors.push(`Failed to create file ${row.filename}: ${fileErrorMsg}`);
+        }
+      }
+
+      // Report file creation errors if any
+      if (fileErrors.length > 0) {
+        setErrors(prev => [...prev, ...fileErrors]);
+      }
+
+      if (supabaseFiles.length === 0) {
+        throw new Error('No valid files could be created from Supabase data');
+      }
 
       const existingFilenames = new Set(files.map(f => f.name));
       const duplicates = supabaseFiles.filter(f => existingFilenames.has(f.name));
@@ -233,7 +279,17 @@ const App = () => {
         await handleFileUpload(supabaseFiles);
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      // Enhanced error extraction
+      let errorMessage = 'Unknown error';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        // Handle Supabase-specific error objects
+        const supabaseError = error as any;
+        errorMessage = supabaseError.message || supabaseError.error_description || JSON.stringify(error);
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
       setErrors(prev => [...prev, `Supabase fetch error: ${errorMessage}`]);
     } finally {
       setProcessing(false);
@@ -284,9 +340,9 @@ const App = () => {
       {errors.length > 0 && <ErrorList errors={errors} />}
       {files.length > 0 && <UploadedFilesList files={files} cleanedData={cleanedData} errors={errors} onRemove={removeFile} onExport={exportCleanedData} show={showUploadedFiles} onToggle={setShowUploadedFiles} />}
       {Object.keys(cleanedData).length > 0 && <AnalyticsControls showMetrics={showMetrics} setShowMetrics={setShowMetrics} showPortfolio={showPortfolio} setShowPortfolio={setShowPortfolio} showCorrelation={showCorrelation} setShowCorrelation={setShowCorrelation} />}
-      {showPortfolio && allMetrics && Object.keys(allMetrics).length > 0 && <PortfolioSection allMetrics={allMetrics} selectedTradeLists={selectedTradeLists} toggleSelection={toggleTradeListSelection} dateRange={dateRange} setDateRange={setDateRange} chartType={chartType} setChartType={setChartType} normalizeEquity={normalizeEquity} setNormalizeEquity={setNormalizeEquity} startingCapital={startingCapital} setStartingCapital={setStartingCapital} portfolioData={portfolioData} individualChartsData={individualChartsData} showMetrics={showMetrics} sortedAndFilteredMetrics={sortedAndFilteredMetrics} contractMultipliers={contractMultipliers} handleContractChange={handleContractChange} masterContractValue={masterContractValue} setMasterContractValue={setMasterContractValue} applyMasterToAll={applyMasterToAll} sortConfig={sortConfig} handleSort={handleSort} sortPriorities={sortPriorities} showAdvancedSort={showAdvancedSort} setShowAdvancedSort={setShowAdvancedSort} addSortPriority={addSortPriority} removeSortPriority={removeSortPriority} updateSortPriority={updateSortPriority} clearSorting={clearSorting} applyAdvancedSort={applyAdvancedSort} />}
+      {showPortfolio && allMetrics && Object.keys(allMetrics).length > 0 && <PortfolioSection allMetrics={allMetrics} selectedTradeLists={selectedTradeLists} setSelectedTradeLists={setSelectedTradeLists} toggleSelection={toggleTradeListSelection} dateRange={dateRange} setDateRange={setDateRange} chartType={chartType} setChartType={setChartType} normalizeEquity={normalizeEquity} setNormalizeEquity={setNormalizeEquity} startingCapital={startingCapital} setStartingCapital={setStartingCapital} portfolioData={portfolioData} individualChartsData={individualChartsData} showMetrics={showMetrics} sortedAndFilteredMetrics={sortedAndFilteredMetrics} contractMultipliers={contractMultipliers} handleContractChange={handleContractChange} masterContractValue={masterContractValue} setMasterContractValue={setMasterContractValue} applyMasterToAll={applyMasterToAll} sortConfig={sortConfig} handleSort={handleSort} sortPriorities={sortPriorities} showAdvancedSort={showAdvancedSort} setShowAdvancedSort={setShowAdvancedSort} addSortPriority={addSortPriority} removeSortPriority={removeSortPriority} updateSortPriority={updateSortPriority} clearSorting={clearSorting} applyAdvancedSort={applyAdvancedSort} />}
       {showCorrelation && allMetrics && Object.keys(allMetrics).length > 0 && <CorrelationSection selectedTradeLists={selectedTradeLists} dailyReturnsMap={dailyReturnsMap} correlationThreshold={correlationThreshold} setCorrelationThreshold={setCorrelationThreshold} correlationMatrix={correlationMatrix} correlationCalculating={correlationCalculating} onExport={exportCorrelationData} allMetrics={allMetrics} />}
-      {showMetrics && !showPortfolio && Object.keys(cleanedData).length > 0 && allMetrics && Object.keys(allMetrics).length > 0 && <MetricsTable sortedAndFilteredMetrics={sortedAndFilteredMetrics} selectedTradeLists={selectedTradeLists} toggleSelection={toggleTradeListSelection} contractMultipliers={contractMultipliers} handleContractChange={handleContractChange} masterContractValue={masterContractValue} setMasterContractValue={setMasterContractValue} applyMasterToAll={applyMasterToAll} sortConfig={sortConfig} handleSort={handleSort} sortPriorities={sortPriorities} showAdvancedSort={showAdvancedSort} setShowAdvancedSort={setShowAdvancedSort} addSortPriority={addSortPriority} removeSortPriority={removeSortPriority} updateSortPriority={updateSortPriority} clearSorting={clearSorting} applyAdvancedSort={applyAdvancedSort} />}
+      {showMetrics && !showPortfolio && Object.keys(cleanedData).length > 0 && allMetrics && Object.keys(allMetrics).length > 0 && <MetricsTable sortedAndFilteredMetrics={sortedAndFilteredMetrics} selectedTradeLists={selectedTradeLists} setSelectedTradeLists={setSelectedTradeLists} toggleSelection={toggleTradeListSelection} contractMultipliers={contractMultipliers} handleContractChange={handleContractChange} masterContractValue={masterContractValue} setMasterContractValue={setMasterContractValue} applyMasterToAll={applyMasterToAll} sortConfig={sortConfig} handleSort={handleSort} sortPriorities={sortPriorities} showAdvancedSort={showAdvancedSort} setShowAdvancedSort={setShowAdvancedSort} addSortPriority={addSortPriority} removeSortPriority={removeSortPriority} updateSortPriority={updateSortPriority} clearSorting={clearSorting} applyAdvancedSort={applyAdvancedSort} />}
       {Object.keys(cleanedData).length > 0 && <SessionComplete />}
     </div>
   );

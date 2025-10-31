@@ -8,6 +8,7 @@ import { getDisplayName, formatNumber } from '../utils/dataUtils.ts';
 interface MetricsTableProps {
   sortedAndFilteredMetrics: any[];
   selectedTradeLists: Set<string>;
+  setSelectedTradeLists: React.Dispatch<React.SetStateAction<Set<string>>>;
   toggleSelection: (filename: string) => void;
   contractMultipliers: { [key: string]: number };
   handleContractChange: (filename: string, value: number) => void;
@@ -29,6 +30,7 @@ interface MetricsTableProps {
 const MetricsTable = ({
   sortedAndFilteredMetrics,
   selectedTradeLists,
+  setSelectedTradeLists,
   toggleSelection,
   contractMultipliers,
   handleContractChange,
@@ -129,12 +131,22 @@ const MetricsTable = ({
                     checked={sortedAndFilteredMetrics.every(metrics => selectedTradeLists.has(metrics.originalFilename)) && sortedAndFilteredMetrics.length > 0}
                     onChange={() => {
                       if (sortedAndFilteredMetrics.every(metrics => selectedTradeLists.has(metrics.originalFilename))) {
-                        sortedAndFilteredMetrics.forEach(metrics => {
-                          toggleSelection(metrics.originalFilename);
+                        // Deselect all
+                        setSelectedTradeLists(prev => {
+                          const newSet = new Set(prev);
+                          sortedAndFilteredMetrics.forEach(metrics => {
+                            newSet.delete(metrics.originalFilename);
+                          });
+                          return newSet;
                         });
                       } else {
-                        sortedAndFilteredMetrics.forEach(metrics => {
-                          toggleSelection(metrics.originalFilename);
+                        // Select all
+                        setSelectedTradeLists(prev => {
+                          const newSet = new Set(prev);
+                          sortedAndFilteredMetrics.forEach(metrics => {
+                            newSet.add(metrics.originalFilename);
+                          });
+                          return newSet;
                         });
                       }
                     }}
