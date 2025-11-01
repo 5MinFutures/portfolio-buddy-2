@@ -128,6 +128,56 @@ const PortfolioSection = ({
   applyAdvancedSort
 }: PortfolioSectionProps) => {
   const [showAdvancedMetrics, setShowAdvancedMetrics] = useState(false);
+  const [riskFreeRate, setRiskFreeRate] = useState<number>(0); // Default 0% annual risk-free rate
+
+  // Calculate downside deviation for Sortino Ratio
+  const downsideDeviation = useMemo(() => {
+    if (!portfolioData?.timeSeries || portfolioData.timeSeries.length < 2) return 0;
+
+    const returns: number[] = [];
+    for (let i = 1; i < portfolioData.timeSeries.length; i++) {
+      const prevEquity = portfolioData.timeSeries[i - 1].cumEquity;
+      const currEquity = portfolioData.timeSeries[i].cumEquity;
+      const dailyReturn = ((currEquity - prevEquity) / prevEquity) * 100;
+      returns.push(dailyReturn);
+    }
+
+    // Calculate downside deviation (only negative returns)
+    const negativeReturns = returns.filter(r => r < 0);
+    if (negativeReturns.length === 0) return 0;
+
+    const sumSquaredNegativeReturns = negativeReturns.reduce((sum, r) => sum + r * r, 0);
+    const downsideVariance = sumSquaredNegativeReturns / negativeReturns.length;
+    return Math.sqrt(downsideVariance);
+  }, [portfolioData]);
+
+  // Calculate 12-month (trailing 365 days) return
+  const twelveMonthReturn = useMemo(() => {
+    if (!portfolioData?.timeSeries || portfolioData.timeSeries.length < 2) return 0;
+
+    const endIndex = portfolioData.timeSeries.length - 1;
+    const endEquity = portfolioData.timeSeries[endIndex].cumEquity;
+    const endDate = new Date(portfolioData.timeSeries[endIndex].dateStr);
+
+    // Find the equity value 365 days ago
+    const targetDate = new Date(endDate);
+    targetDate.setDate(targetDate.getDate() - 365);
+
+    // Find closest data point to 365 days ago
+    let startIndex = 0;
+    for (let i = endIndex; i >= 0; i--) {
+      const pointDate = new Date(portfolioData.timeSeries[i].dateStr);
+      if (pointDate <= targetDate) {
+        startIndex = i;
+        break;
+      }
+    }
+
+    const startEquity = portfolioData.timeSeries[startIndex].cumEquity;
+    if (startEquity === 0) return 0;
+
+    return ((endEquity - startEquity) / Math.abs(startEquity)) * 100;
+  }, [portfolioData]);
 
   // Calculate max drawdown point for annotation
   const maxDrawdownPoint = useMemo(() => {
@@ -455,13 +505,35 @@ const PortfolioSection = ({
               </button>
             </div>
             {showAdvancedMetrics && (
-              <div className="text-xs text-blue-700 space-y-1 mt-2">
+              <div className="text-xs text-blue-700 space-y-2 mt-2">
+                <div className="bg-white p-2 rounded border border-blue-200">
+                  <label className="flex items-center gap-2">
+                    <strong>Risk-Free Rate (%):</strong>
+                    <input
+                      type="number"
+                      value={riskFreeRate}
+                      onChange={(e) => setRiskFreeRate(Number(e.target.value))}
+                      min="0"
+                      max="10"
+                      step="0.1"
+                      className="w-20 px-2 py-1 border border-gray-300 rounded text-gray-900"
+                    />
+                  </label>
+                </div>
                 <p><strong>Portfolio Composition:</strong> {Array.from(selectedTradeLists).map(filename => allMetrics[filename]?.strategyName || filename.replace('.csv', '')).join(', ')}</p>
                 <p><strong>Start Date:</strong> {portfolioData.timeSeries[0]?.dateStr || 'N/A'}</p>
                 <p><strong>End Date:</strong> {portfolioData.timeSeries[portfolioData.timeSeries.length - 1]?.dateStr || 'N/A'}</p>
                 <p><strong>Average Trade:</strong> {formatNumber(portfolioData.metrics.totalPnl / (portfolioData.metrics.totalTrades || 1))}</p>
                 <p><strong>Sharpe Ratio:</strong> {((portfolioData.metrics.annualGrowthRate / 100) / (portfolioData.metrics.maxDrawdown / startingCapital)).toFixed(2)}</p>
-                <p><strong>Sortino Ratio:</strong> {((portfolioData.metrics.annualGrowthRate / 100) / (portfolioData.metrics.maxDrawdown / startingCapital)).toFixed(2)}</p>
+                <p>
+                  <strong>Sortino Ratio:</strong> {
+                    downsideDeviation > 0
+                      ? ((portfolioData.metrics.annualGrowthRate - riskFreeRate) / downsideDeviation).toFixed(2)
+                      : 'N/A'
+                  }
+                  {downsideDeviation > 0 && <span className="text-gray-500 ml-1">(Downside Dev: {downsideDeviation.toFixed(2)}%)</span>}
+                </p>
+                <p><strong>12-Month Return:</strong> {twelveMonthReturn.toFixed(2)}%</p>
                 <p><strong>Max Drawdown Duration:</strong> N/A</p>
               </div>
             )}

@@ -130,25 +130,65 @@ const usePortfolio = (
   }, [allMetrics, selectedTradeLists, normalizeEquity]);
 
   const dailyReturnsMap = useMemo(() => {
-    const returnsMap = new Map<string, number[]>();
+    if (selectedTradeLists.size === 0) return new Map<string, number[]>();
+
+    // Step 1: Collect ALL unique dates across ALL selected strategies
+    const allDatesSet = new Set<string>();
+    const strategyEquityByDate = new Map<string, Map<string, number>>();
+
     Array.from(selectedTradeLists).forEach(filename => {
       const metrics = allMetrics[filename];
-      const dailyReturns: number[] = [];
-      let prevEquity = 0;
-      const equityByDate = new Map();
+      if (!metrics || !metrics.tradeData) return;
+
+      const equityByDate = new Map<string, number>();
       metrics.tradeData.forEach((trade: any) => {
         const key = getDateKey(trade.date);
+        allDatesSet.add(key);
         if (!equityByDate.has(key)) equityByDate.set(key, 0);
         equityByDate.set(key, equityByDate.get(key) + trade.equity);
       });
-      Array.from(equityByDate.keys()).sort().forEach(date => {
-        const dailyEquity = equityByDate.get(date);
-        const returnPct = prevEquity !== 0 ? (dailyEquity / prevEquity) * 100 : 0;
-        dailyReturns.push(returnPct);
-        prevEquity += dailyEquity;
-      });
-      returnsMap.set(filename, dailyReturns);
+      strategyEquityByDate.set(filename, equityByDate);
     });
+
+    // Step 2: Create common sorted date array
+    const commonDates = Array.from(allDatesSet).sort();
+
+    if (commonDates.length === 0) return new Map<string, number[]>();
+
+    // Step 3: Align each strategy's returns to the common date timeline
+    const returnsMap = new Map<string, number[]>();
+
+    Array.from(selectedTradeLists).forEach(filename => {
+      const equityByDate = strategyEquityByDate.get(filename);
+      if (!equityByDate) return;
+
+      const alignedReturns: number[] = [];
+      let cumEquity = 0;
+      let prevCumEquity = 0;
+
+      commonDates.forEach(date => {
+        const dailyEquity = equityByDate.get(date) || 0;
+        cumEquity += dailyEquity;
+
+        // Calculate percentage return
+        // If no previous equity, return is 0
+        // Otherwise, calculate return as (change in equity / previous equity) * 100
+        let returnPct = 0;
+        if (prevCumEquity !== 0) {
+          returnPct = ((cumEquity - prevCumEquity) / Math.abs(prevCumEquity)) * 100;
+        } else if (dailyEquity !== 0) {
+          // First trade - calculate return based on daily equity relative to starting capital
+          // For correlation purposes, we'll use 0 for the first data point
+          returnPct = 0;
+        }
+
+        alignedReturns.push(returnPct);
+        prevCumEquity = cumEquity;
+      });
+
+      returnsMap.set(filename, alignedReturns);
+    });
+
     return returnsMap;
   }, [allMetrics, selectedTradeLists]);
 
