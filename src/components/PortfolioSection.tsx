@@ -130,7 +130,7 @@ const PortfolioSection = ({
   const [showAdvancedMetrics, setShowAdvancedMetrics] = useState(false);
   const [riskFreeRate, setRiskFreeRate] = useState<number>(0); // Default 0% annual risk-free rate
 
-  // Calculate downside deviation for Sortino Ratio
+  // Calculate downside deviation for Sortino Ratio (annualized)
   const downsideDeviation = useMemo(() => {
     if (!portfolioData?.timeSeries || portfolioData.timeSeries.length < 2) return 0;
 
@@ -146,9 +146,15 @@ const PortfolioSection = ({
     const negativeReturns = returns.filter(r => r < 0);
     if (negativeReturns.length === 0) return 0;
 
+    // BUG FIX #1: Divide by total returns count, not just negative returns count
     const sumSquaredNegativeReturns = negativeReturns.reduce((sum, r) => sum + r * r, 0);
-    const downsideVariance = sumSquaredNegativeReturns / negativeReturns.length;
-    return Math.sqrt(downsideVariance);
+    const downsideVariance = sumSquaredNegativeReturns / returns.length;
+    const dailyDownsideDeviation = Math.sqrt(downsideVariance);
+
+    // BUG FIX #2: Annualize the downside deviation to match annual returns
+    const annualizedDownsideDeviation = dailyDownsideDeviation * Math.sqrt(365);
+
+    return annualizedDownsideDeviation;
   }, [portfolioData]);
 
   // Calculate 12-month (trailing 365 days) return
@@ -531,7 +537,7 @@ const PortfolioSection = ({
                       ? ((portfolioData.metrics.annualGrowthRate - riskFreeRate) / downsideDeviation).toFixed(2)
                       : 'N/A'
                   }
-                  {downsideDeviation > 0 && <span className="text-gray-500 ml-1">(Downside Dev: {downsideDeviation.toFixed(2)}%)</span>}
+                  {downsideDeviation > 0 && <span className="text-gray-500 ml-1">(Annualized Downside Dev: {downsideDeviation.toFixed(2)}%)</span>}
                 </p>
                 <p><strong>12-Month Return:</strong> {twelveMonthReturn.toFixed(2)}%</p>
                 <p><strong>Max Drawdown Duration:</strong> N/A</p>
