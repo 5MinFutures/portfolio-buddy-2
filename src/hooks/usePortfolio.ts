@@ -13,6 +13,11 @@ const usePortfolio = (
 ) => {
   const portfolioData = useMemo(() => {
     if (selectedTradeLists.size === 0) return null;
+
+    // Parse date range filters
+    const filterStartDate = dateRange.start ? new Date(dateRange.start) : null;
+    const filterEndDate = dateRange.end ? new Date(dateRange.end) : null;
+
     const allTrades: any[] = [];
     let totalMargin = 0;
     let startDate = new Date();
@@ -31,6 +36,13 @@ const usePortfolio = (
     });
     allTrades.sort((a, b) => a.date - b.date);
 
+    // Filter trades by date range
+    const filteredTrades = allTrades.filter(trade => {
+      if (filterStartDate && trade.date < filterStartDate) return false;
+      if (filterEndDate && trade.date > filterEndDate) return false;
+      return true;
+    });
+
     const timeSeries: any[] = [];
     let cumEquity = startingCapital;
     let peak = startingCapital;
@@ -44,7 +56,7 @@ const usePortfolio = (
 
     // Group by date for daily aggregation if needed, but for equity curve, cumulative per trade date
     const equityByDate = new Map();
-    allTrades.forEach(trade => {
+    filteredTrades.forEach(trade => {
       const key = getDateKey(trade.date);
       if (!equityByDate.has(key)) equityByDate.set(key, 0);
       equityByDate.set(key, equityByDate.get(key) + trade.equity);
@@ -105,12 +117,29 @@ const usePortfolio = (
   }, [allMetrics, selectedTradeLists, dateRange, normalizeEquity, startingCapital, contractMultipliers]);
 
   const individualChartsData = useMemo(() => {
+    // Parse date range filters
+    const filterStartDate = dateRange.start ? new Date(dateRange.start) : null;
+    const filterEndDate = dateRange.end ? new Date(dateRange.end) : null;
+
     const series = Array.from(selectedTradeLists).map((filename: string, index: number) => {
       const metrics = allMetrics[filename];
-      const data = metrics.processedData.map((trade: any) => ({
-        date: getDateKey(trade.date),
-        cumEquity: normalizeEquity ? (trade.cumEquity / metrics.margin) * 100 : trade.cumEquity
-      }));
+
+      // Filter processedData by date range
+      const filteredData = metrics.processedData.filter((trade: any) => {
+        if (filterStartDate && trade.date < filterStartDate) return false;
+        if (filterEndDate && trade.date > filterEndDate) return false;
+        return true;
+      });
+
+      // Recalculate cumulative equity for the filtered data
+      let cumEquity = 0;
+      const data = filteredData.map((trade: any) => {
+        cumEquity += trade.equity;
+        return {
+          date: getDateKey(trade.date),
+          cumEquity: normalizeEquity ? (cumEquity / metrics.margin) * 100 : cumEquity
+        };
+      });
       return { filename, name: getDisplayName(metrics), color: getColorForIndex(index), data };
     });
 
@@ -127,10 +156,14 @@ const usePortfolio = (
     });
 
     return { series, combinedData };
-  }, [allMetrics, selectedTradeLists, normalizeEquity]);
+  }, [allMetrics, selectedTradeLists, normalizeEquity, dateRange]);
 
   const dailyReturnsMap = useMemo(() => {
     if (selectedTradeLists.size === 0) return new Map<string, number[]>();
+
+    // Parse date range filters
+    const filterStartDate = dateRange.start ? new Date(dateRange.start) : null;
+    const filterEndDate = dateRange.end ? new Date(dateRange.end) : null;
 
     // Step 1: Collect ALL unique dates across ALL selected strategies
     const allDatesSet = new Set<string>();
@@ -142,7 +175,12 @@ const usePortfolio = (
 
       const equityByDate = new Map<string, number>();
       metrics.tradeData.forEach((trade: any) => {
+        // Filter by date range
+        if (filterStartDate && trade.date < filterStartDate) return;
+        if (filterEndDate && trade.date > filterEndDate) return;
+
         const key = getDateKey(trade.date);
+        if (!key) return; // Skip if date key is null
         allDatesSet.add(key);
         if (!equityByDate.has(key)) equityByDate.set(key, 0);
         equityByDate.set(key, equityByDate.get(key) + trade.equity);
@@ -190,7 +228,7 @@ const usePortfolio = (
     });
 
     return returnsMap;
-  }, [allMetrics, selectedTradeLists]);
+  }, [allMetrics, selectedTradeLists, dateRange]);
 
   return { portfolioData, individualChartsData, dailyReturnsMap };
 };
