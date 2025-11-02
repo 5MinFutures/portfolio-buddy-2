@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Calendar, DollarSign } from 'lucide-react';
 import MetricsTable from './MetricsTable';
 import { Chart as ChartJS, LineController, LineElement, PointElement, CategoryScale, LinearScale, TimeScale, Tooltip, Legend, Filler } from 'chart.js';
@@ -7,6 +7,8 @@ import 'chartjs-adapter-date-fns'; // For date handling
 import zoomPlugin from 'chartjs-plugin-zoom';
 import annotationPlugin from 'chartjs-plugin-annotation';
 import { formatNumber } from '../utils/dataUtils';
+import { useChartSync } from '../hooks/useChartSync';
+import { ChartZoomControls } from './ChartZoomControls';
 
 // Register Chart.js components and plugins
 ChartJS.register(LineController, LineElement, PointElement, CategoryScale, LinearScale, TimeScale, Tooltip, Legend, Filler, zoomPlugin, annotationPlugin);
@@ -192,6 +194,18 @@ const PortfolioSection = ({
       point.drawdown < max.drawdown ? point : max, portfolioData.timeSeries[0] || {} as TimeSeriesItem);
   }, [portfolioData]);
 
+  // Chart refs for synchronized zoom
+  const equityChartRef = useRef<ChartJS<'line', { x: string; y: number }[], unknown>>(null);
+  const drawdownChartRef = useRef<ChartJS<'line', { x: string; y: number }[], unknown>>(null);
+  const individualChartRef = useRef<ChartJS<'line', { x: string; y: number }[], unknown>>(null);
+
+  // Synchronized zoom hook
+  const { onZoomCompleteHandler, onPanCompleteHandler, resetZoom, isZoomed } = useChartSync({
+    equityChartRef,
+    drawdownChartRef,
+    individualChartRef
+  });
+
   // Equity Chart Data
   const equityChartData = useMemo(() => {
     if (!portfolioData?.timeSeries) return { datasets: [] };
@@ -295,8 +309,16 @@ const PortfolioSection = ({
           wheel: { enabled: true },
           pinch: { enabled: true },
           mode: 'x' as const,
+          onZoomComplete: onZoomCompleteHandler,
         },
-        pan: { enabled: true, mode: 'x' as const },
+        pan: {
+          enabled: true,
+          mode: 'x' as const,
+          onPanComplete: onPanCompleteHandler,
+        },
+        limits: {
+          x: { min: 'original' as const, max: 'original' as const },
+        },
       },
       annotation: {
         annotations: maxDrawdownPoint && (chartType === 'drawdown' || chartType === 'both') ? [
@@ -553,13 +575,17 @@ const PortfolioSection = ({
       )}
       {portfolioData && selectedTradeLists.size > 0 && portfolioData.timeSeries.length > 0 && (
         <div className="space-y-3 sm:space-y-4">
+          <ChartZoomControls
+            isZoomed={isZoomed}
+            onReset={resetZoom}
+          />
           {(chartType === 'equity' || chartType === 'both') && (
             <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
               <h4 className="font-medium text-gray-800 mb-3 sm:mb-4 text-sm sm:text-base">
                 Portfolio Equity Curve {normalizeEquity && '(% of Margin)'}
               </h4>
               <div style={{ height: '300px' }} className="min-h-[200px] sm:min-h-[300px]" aria-label="Portfolio Equity Curve">
-                <Chart type="line" data={equityChartData} options={chartOptions} />
+                <Chart ref={equityChartRef} type="line" data={equityChartData} options={chartOptions} />
               </div>
             </div>
           )}
@@ -569,7 +595,7 @@ const PortfolioSection = ({
                 Portfolio Drawdown {normalizeEquity && '(% of Margin)'}
               </h4>
               <div style={{ height: '250px' }} className="min-h-[150px] sm:min-h-[250px]" aria-label="Portfolio Drawdown">
-                <Chart type="line" data={drawdownChartData} options={drawdownOptions} />
+                <Chart ref={drawdownChartRef} type="line" data={drawdownChartData} options={drawdownOptions} />
               </div>
             </div>
           )}
@@ -579,7 +605,7 @@ const PortfolioSection = ({
                 Individual Trade List Performance {normalizeEquity && '(% of Margin)'}
               </h4>
               <div style={{ height: '300px' }} className="min-h-[200px] sm:min-h-[300px]" aria-label="Individual Trade List Performance">
-                <Chart type="line" data={individualChartData} options={chartOptions} />
+                <Chart ref={individualChartRef} type="line" data={individualChartData} options={chartOptions} />
               </div>
             </div>
           )}
