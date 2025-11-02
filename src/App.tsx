@@ -47,6 +47,13 @@ const App = () => {
   const { allMetrics, sortedAndFilteredMetrics } = useMetrics(cleanedData, contractMultipliers, sortConfig, sortPriorities);
   const { portfolioData, individualChartsData, dailyReturnsMap } = usePortfolio(allMetrics || {}, selectedTradeLists, dateRange, normalizeEquity, startingCapital, contractMultipliers);
 
+  // Auto-enable "Show Metrics" when files are added
+  useEffect(() => {
+    if (Object.keys(cleanedData).length > 0) {
+      setShowMetrics(true);
+    }
+  }, [cleanedData]);
+
   // Correlation matrix computation
   useEffect(() => {
     if (showCorrelation && selectedTradeLists.size >= 2) {
@@ -109,6 +116,7 @@ const App = () => {
     setProcessing(true);
     setErrors([]);
     const newCleanedData: CleanedData = { ...cleanedData };
+    const newFilenames: string[] = [];
     for (const file of selectedFiles) {
       try {
         const content = await readFileContent(file);
@@ -120,12 +128,19 @@ const App = () => {
           rowCount: processed.length,
           columnCount: parsed.header.length
         };
+        newFilenames.push(file.name);
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         setErrors(prev => [...prev, `Error processing ${file.name}: ${errorMessage}`]);
       }
     }
     setCleanedData(newCleanedData);
+    // Auto-select newly uploaded files
+    setSelectedTradeLists(prev => {
+      const newSet = new Set(prev);
+      newFilenames.forEach(filename => newSet.add(filename));
+      return newSet;
+    });
     setProcessing(false);
   }, [cleanedData]);
 

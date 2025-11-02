@@ -19,7 +19,7 @@ const UploadSection = ({ onFileChange, onFetchSupabase, processing }: UploadSect
         </label>
       </div>
       <button onClick={onFetchSupabase} className="mt-3 sm:mt-4 px-3 py-1.5 sm:px-4 sm:py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm sm:text-base">
-        Fetch from Supabase
+        Preload data
       </button>
       {processing && <p className="mt-2 text-blue-600 text-sm">Processing...</p>}
     </div>
