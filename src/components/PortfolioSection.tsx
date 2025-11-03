@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react';
-import { Calendar, DollarSign } from 'lucide-react';
+import { Calendar, DollarSign, ArrowRight } from 'lucide-react';
 import MetricsTable from './MetricsTable';
 import { Chart as ChartJS, LineController, LineElement, PointElement, CategoryScale, LinearScale, TimeScale, Tooltip, Legend, Filler } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
@@ -130,7 +130,7 @@ const PortfolioSection = ({
   applyAdvancedSort
 }: PortfolioSectionProps) => {
   const [showAdvancedMetrics, setShowAdvancedMetrics] = useState(false);
-  const [riskFreeRate, setRiskFreeRate] = useState<number>(0); // Default 0% annual risk-free rate
+  const [riskFreeRate, setRiskFreeRate] = useState<number>(4); // Default 4% annual risk-free rate
 
   // Calculate downside deviation for Sortino Ratio (annualized)
   const downsideDeviation = useMemo(() => {
@@ -429,6 +429,17 @@ const PortfolioSection = ({
                   placeholder="1000000"
                   aria-label="Starting Capital"
                 />
+                {portfolioData && (
+                  <button
+                    onClick={() => setStartingCapital(portfolioData.metrics.totalMargin)}
+                    className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 rounded transition-colors touch-manipulation"
+                    aria-label="Set Starting Capital to Total Margin"
+                    title="Set to Total Margin"
+                  >
+                    <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    <span className="hidden sm:inline">Total Margin</span>
+                  </button>
+                )}
               </div>
               <select
                 value={chartType}
@@ -562,7 +573,6 @@ const PortfolioSection = ({
                   {downsideDeviation > 0 && <span className="text-gray-500 ml-1">(Annualized Downside Dev: {downsideDeviation.toFixed(2)}%)</span>}
                 </p>
                 <p><strong>12-Month Return:</strong> {twelveMonthReturn.toFixed(2)}%</p>
-                <p><strong>Max Drawdown Duration:</strong> N/A</p>
               </div>
             )}
           </div>

@@ -2,11 +2,10 @@ import { Upload } from 'lucide-react';
 
 interface UploadSectionProps {
   onFileChange: (e: React.ChangeEvent<HTMLInputElement> | React.DragEvent<HTMLDivElement>) => void;
-  onFetchSupabase: () => void;
   processing: boolean;
 }
 
-const UploadSection = ({ onFileChange, onFetchSupabase, processing }: UploadSectionProps) => {
+const UploadSection = ({ onFileChange, processing }: UploadSectionProps) => {
   return (
     <div className="mb-4 sm:mb-6">
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-8 text-center cursor-pointer hover:border-blue-500 transition-colors" onDragOver={(e) => e.preventDefault()} onDrop={onFileChange}>
@@ -18,9 +17,6 @@ const UploadSection = ({ onFileChange, onFetchSupabase, processing }: UploadSect
           <input type="file" multiple accept=".csv" onChange={onFileChange} className="hidden" />
         </label>
       </div>
-      <button onClick={onFetchSupabase} className="mt-3 sm:mt-4 px-3 py-1.5 sm:px-4 sm:py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm sm:text-base">
-        Preload data
-      </button>
       {processing && <p className="mt-2 text-blue-600 text-sm">Processing...</p>}
     </div>
   );

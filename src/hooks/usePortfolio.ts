@@ -85,8 +85,21 @@ const usePortfolio = (
       });
     });
 
-    const tradingPeriodDays = differenceInCalendarDays(endDate, startDate) || 1;
-    const annualGrowthRate = (totalPnl / startingCapital / tradingPeriodDays) * 365 * 100;
+    // Calculate trading days based on unique dates in filtered trades
+    // When no date range is set, uses all trades from earliest to latest
+    const uniqueTradingDates = new Set(filteredTrades.map(trade => getDateKey(trade.date)));
+    const tradingPeriodDays = uniqueTradingDates.size || 1;
+
+    // Calculate calendar days for accurate annual growth rate
+    // Uses actual calendar days between first and last trade (respects date range filters)
+    const calendarDays = filteredTrades.length > 0
+      ? differenceInCalendarDays(
+          filteredTrades[filteredTrades.length - 1].date,
+          filteredTrades[0].date
+        ) || 1
+      : 1;
+
+    const annualGrowthRate = (totalPnl / startingCapital / calendarDays) * 365 * 100;
     const pnlDrawdownRatio = maxDrawdown !== 0 ? totalPnl / maxDrawdown : Infinity;
     const ddPercentStartingCapital = (maxDrawdown / startingCapital) * 100;
     const tradeWinRate = totalTrades > 0 ? (winningTradesCount / totalTrades) * 100 : 0;

@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from './supabaseClient';
+import ButtonSection from './components/ButtonSection.tsx';
 import Header from './components/Header.tsx';
 import UploadSection from './components/UploadSection.tsx';
 import ErrorList from './components/ErrorList.tsx';
@@ -345,13 +346,14 @@ const App = () => {
 
   return (
     <div className="container mx-auto p-2 sm:p-4 max-w-7xl">
+      <ButtonSection onFetchSupabase={fetchFromSupabase} processing={processing} />
       <Header />
       <UploadSection onFileChange={(e) => {
         const target = e.target as HTMLInputElement;
         if (target.files) {
           handleFileUpload(Array.from(target.files));
         }
-      }} onFetchSupabase={fetchFromSupabase} processing={processing} />
+      }} processing={processing} />
       {errors.length > 0 && <ErrorList errors={errors} />}
       {files.length > 0 && <UploadedFilesList files={files} cleanedData={cleanedData} errors={errors} onRemove={removeFile} onExport={exportCleanedData} show={showUploadedFiles} onToggle={setShowUploadedFiles} />}
       {Object.keys(cleanedData).length > 0 && <AnalyticsControls showMetrics={showMetrics} setShowMetrics={setShowMetrics} showPortfolio={showPortfolio} setShowPortfolio={setShowPortfolio} showCorrelation={showCorrelation} setShowCorrelation={setShowCorrelation} />}
