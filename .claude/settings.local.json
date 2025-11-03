@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(npm:*)",
+      "Bash(cat:*)",
+      "Bash(sed:*)"
+    ]
+  },
+  "promptPrefix": "💬 COMMUNICATION STYLE:\nExplain to the user in layman's terms - concise and clear. This only affects explanations, not your technical thinking, reasoning, or code quality.\n\n"
+}
