@@ -9,12 +9,17 @@ const useContractMultipliers = () => {
     setContractMultipliers(prev => ({ ...prev, [filename]: value }));
   };
 
-  const applyMasterToAll = (value: number) => {
-    const updated: { [key: string]: number } = {};
-    Object.keys(contractMultipliers).forEach(key => {
-      updated[key] = value;
+  const applyMasterToAll = (value: number, targetKeys?: string[]) => {
+    setContractMultipliers(prev => {
+      const updated = { ...prev };
+      const keysToUpdate = targetKeys || Object.keys(prev);
+
+      keysToUpdate.forEach(key => {
+        updated[key] = value;
+      });
+
+      return updated;
     });
-    setContractMultipliers(updated);
   };
 
   return { contractMultipliers, masterContractValue, setMasterContractValue, handleContractChange, applyMasterToAll };
