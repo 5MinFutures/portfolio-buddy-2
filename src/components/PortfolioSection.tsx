@@ -24,6 +24,7 @@ interface TimeSeriesItem {
 interface PortfolioMetrics {
   totalPnl: number;
   annualGrowthRate: number;
+  isAnnualized: boolean;
   pnlDrawdownRatio: number;
   maxDrawdown: number;
   ddPercentStartingCapital: number;
@@ -470,7 +471,16 @@ const PortfolioSection = ({
               </p>
             </div>
             <div>
-              <p className="text-xs text-blue-600 font-medium">Annual Growth Rate</p>
+              <p className="text-xs text-blue-600 font-medium">
+                {portfolioData.metrics.isAnnualized ? 'Annual Growth Rate' : (
+                  <>
+                    Total Return
+                    <span className="ml-1 text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded-full">
+                      &lt; 1 yr
+                    </span>
+                  </>
+                )}
+              </p>
               <p className={`text-base sm:text-lg font-bold ${portfolioData.metrics.annualGrowthRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {portfolioData.metrics.annualGrowthRate.toFixed(2)}%
               </p>

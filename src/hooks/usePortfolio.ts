@@ -1,6 +1,6 @@
 // src/hooks/usePortfolio.ts
 import { useMemo } from 'react';
-import { getDateKey, getMarginRate, getDisplayName, getColorForIndex } from '../utils/dataUtils.ts';
+import { getDateKey, getDisplayName, getColorForIndex } from '../utils/dataUtils.ts';
 import { differenceInCalendarDays } from 'date-fns';
 
 const usePortfolio = (
@@ -99,7 +99,12 @@ const usePortfolio = (
         ) || 1
       : 1;
 
-    const annualGrowthRate = (totalPnl / startingCapital / calendarDays) * 365 * 100;
+    // Calculate annual growth rate or actual return based on period length
+    // If less than 12 months, show actual return instead of annualizing
+    const isAnnualized = calendarDays >= 365;
+    const annualGrowthRate = isAnnualized
+      ? (totalPnl / startingCapital / calendarDays) * 365 * 100  // Annualized for periods >= 12 months
+      : (totalPnl / startingCapital) * 100;                      // Actual return for periods < 12 months
     const pnlDrawdownRatio = maxDrawdown !== 0 ? totalPnl / maxDrawdown : Infinity;
     const ddPercentStartingCapital = (maxDrawdown / startingCapital) * 100;
     const tradeWinRate = totalTrades > 0 ? (winningTradesCount / totalTrades) * 100 : 0;
@@ -112,6 +117,7 @@ const usePortfolio = (
       metrics: {
         totalPnl,
         annualGrowthRate,
+        isAnnualized,
         pnlDrawdownRatio,
         maxDrawdown,
         ddPercentStartingCapital,
