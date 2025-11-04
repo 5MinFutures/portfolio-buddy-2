@@ -29,7 +29,7 @@ const usePortfolio = (
           ...trade,
           dateKey: getDateKey(trade.date)
         })));
-        totalMargin += getMarginRate(metrics.symbol, filename);
+        totalMargin += metrics.margin;
         if (metrics.startDate < startDate) startDate = metrics.startDate;
         if (metrics.endDate > endDate) endDate = metrics.endDate;
       }
